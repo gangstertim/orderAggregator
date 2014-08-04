@@ -11,10 +11,11 @@ Options:
 
 '''
 
-import re, json, redis
+import re, json, redis, requests
 from docopt import docopt
 from schema import Use, Schema
 from flask import Flask, request
+from prettytable import PrettyTable
 from datetime import datetime, timedelta
 
 app                  = Flask(__name__)
@@ -32,7 +33,8 @@ with open('restaurantList.txt') as f:
     restaurants = [[r.lower() for r in rest] for rest in json.load(f)] # Convert to lowercase
 
 def payload(text): return {"channel": "#seamless-thursday", "username": "OrderBot", "text": text, "icon_emoji": ":seamless:", 'link_names': 1}
-
+def order_list(filename, table): return {"token": token, "filename" : filename, "title": filename, "content": str(table), "channels": ["#seamless-thursday"]}
+        
 def hash_restaurant(r): return 'orders:%s' % r
 def hash_user(u): return 'orderbot:users:%s' % u
 
@@ -48,7 +50,7 @@ def add_order(user, restaurant, entree, overwrite=False):
             return post_message("@%s you have previously placed an order today.  Would you like to replace that order? Yes/No" % (user))
     d = datetime.now()
     db.hset(resthash, user, entree)
-    db.set(userhash, resthash)
+    db.set(userhash, restaurant)
     exptime = datetime(d.year, d.month, d.day) + timedelta(1)
     db.expireat(resthash, exptime)
     db.expireat(userhash, exptime)
@@ -84,8 +86,10 @@ def save_order():
     if post in ["orderbot ?", "orderbot?", "orderbot: ?"]:
         if db.exists(hash_user(user)):
             curr_rest = db.get(hash_user(user))
-            curr_order = db.hget(curr_rest, user)
-            response = post_message("@%s your current order is `%s` from `%s`" % (user, curr_order, curr_rest.replace('orders:', '', 1)))
+            curr_order = db.hget(hash_restaurant(curr_rest), user)
+            if curr_rest == "miscellaneous":
+                [curr_rest, curr_order] = [x.strip() for x in curr_order.split(':', 1)]
+            response = post_message("@%s your current order is `%s` from `%s`" % (user, curr_order, curr_rest))
         else:
             response = post_message("@%s, you have not yet ordered today" % user)
     elif user in no_restaurant_found:
@@ -114,11 +118,33 @@ def save_order():
     elif user in administrative_users:
         #orderbot, list orders from [restaurant]
         #orderbot, list all orders
-        if post == "orderbot, list all orders":
-            pass
-        elif re.match(r'%s, list all orders from (.*)' % prefix, post):
-            pass
-        else: pass
+        pattern = re.match(r'%s,? list all orders\s*?(?:from)?(.*)' % prefix, post)
+        
+        if pattern:
+            table = PrettyTable(["Name", "Restaurant", "Order"])
+            table.align["Name"] = 'l'
+            table.align["Restaurant"] = 'l'
+            table.align["Order"] = 'l'
+            
+            rest = pattern.group(1).strip()
+            if rest:
+                filename = rest + ".txt"
+                resthash = hash_restaurant(rest)
+                order_hash = db.hgetall(resthash)
+                for name, order in order_hash.iteritems():
+                    x.add_row((name, rest, order))
+            else:
+                keys = db.keys("orders:*")
+                filename = "All Orders.txt"
+                for resthash in keys:
+                    rest = resthash[7:]
+                    order_hash = db.hgetall(resthash)
+                    for name, order in order_hash.iteritems():
+                        table.add_row((name, rest, order))
+            
+            requests.post(postURL, data=json.dumps(order_list(filename, table)))
+            response = post_message("Please check the uploaded file in the sidebar of this channel for the order list!")
+            
         
     return response
     
