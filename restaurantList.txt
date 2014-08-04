@@ -1,5 +1,5 @@
 [
-    ["Cavanaugh's", "Cav's", "Cavanaughs", "Cavanaugh's Restaurant"],
+    ["Cavanaugh's", "Cavs", "Cav's", "Cavanaughs", "Cavanaugh's Restaurant"],
     ["Tiffin", "Tiffen"],
     ["Mizu", "Mizus", "Misu"],
     ["Fiesta Pizza", "Fiesta"],
