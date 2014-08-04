@@ -16,13 +16,16 @@ from docopt import docopt
 from schema import Use, Schema
 from flask import Flask, request
 
-app = Flask(__name__)
+app     = Flask(__name__)
+prefix  = 'orderbot'
+exptime = 60*60*24*2 # Two days
+db      = redis.StrictRedis()
+with open('restaurantList.txt') as f:
+    restaurants = json.load(f)
 
-prefix = 'orderbot'
+restaurants = [[r.lower() for r in rest] for rest in restaurants] # Convert to lowercase
 
 def payload(text): return {"channel": "#seamless-thursday", "username": "OrderBot", "text": text, "icon_emoji": ":seamless:"}
-
-db = redis.StrictRedis()
 
 @app.route('/', methods=['POST'])
 def save_order():
@@ -30,9 +33,15 @@ def save_order():
     user  = request.form['user_name']
     order = re.match(r'%s\s*?:(.+?):(.+)' % prefix, post)
     if order:
-        order.group(1).strip() # restaurant
-        order.group(2).strip() # entree
-        return post_message("")
+        restaurant = order.group(1).strip()
+        entree     = order.group(2).strip()
+        for r in restaurants:
+            if restaurant in r:
+                db.rpush('orders:%s' % r[0], '%s: %s' % (user, entree))
+                expire('orders:%s' % r[0], exptime)
+                return post_message("%s your order to %s was added successfully" % (user, r[0]))
+                
+        return post_message("%s, %s could not be found" % (user, restaurant))
     return ""
 
 def post_message(message):
