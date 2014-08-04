@@ -142,8 +142,8 @@ def save_order():
                     for name, order in order_hash.iteritems():
                         table.add_row((name, rest, order))
             
-            requests.post(postURL, data=json.dumps(order_list(filename, table)))
-            response = post_message("Please check the uploaded file in the sidebar of this channel for the order list!")
+            upload_response = requests.post(postURL, data=json.dumps(order_list(filename, table)))
+            response = post_message(upload_response.text)
             
         
     return response
