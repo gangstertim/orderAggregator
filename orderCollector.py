@@ -132,7 +132,7 @@ def save_order():
                 resthash = hash_restaurant(rest)
                 order_hash = db.hgetall(resthash)
                 for name, order in order_hash.iteritems():
-                    x.add_row((name, rest, order))
+                    table.add_row((name, rest, order))
             else:
                 keys = db.keys("orders:*")
                 title = "All Orders"
@@ -143,7 +143,7 @@ def save_order():
                         table.add_row((name, rest, order))
             
             #upload_response = requests.get(postURL, data=json.dumps(order_list(filename, table)))
-            response = post_message("%s\n%s" % (title, str(table)))
+            response = post_message("*%s*\n```%s```" % (title, str(table)))
             
         
     return response
