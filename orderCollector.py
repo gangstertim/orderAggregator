@@ -128,22 +128,22 @@ def save_order():
             
             rest = pattern.group(1).strip()
             if rest:
-                filename = rest + ".txt"
+                title = rest 
                 resthash = hash_restaurant(rest)
                 order_hash = db.hgetall(resthash)
                 for name, order in order_hash.iteritems():
                     x.add_row((name, rest, order))
             else:
                 keys = db.keys("orders:*")
-                filename = "All Orders.txt"
+                title = "All Orders"
                 for resthash in keys:
                     rest = resthash[7:]
                     order_hash = db.hgetall(resthash)
                     for name, order in order_hash.iteritems():
                         table.add_row((name, rest, order))
             
-            upload_response = requests.get(postURL, data=json.dumps(order_list(filename, table)))
-            response = post_message(upload_response.text)
+            #upload_response = requests.get(postURL, data=json.dumps(order_list(filename, table)))
+            response = post_message("%s\n%s" % (title, str(table)))
             
         
     return response
