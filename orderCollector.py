@@ -37,7 +37,7 @@ def add_order(user, restaurant, entree):
     userhash = 'orderbot:users:%s' % user
     d = datetime.now()
     db.hset(resthash, user, entree)
-    db.set(user, resthash)
+    db.set(userhash, resthash)
     exptime = datetime(d.year, d.month, d.day) + timedelta(1)
     db.expireat(resthash, exptime)
     db.expireat(userhash, exptime)
