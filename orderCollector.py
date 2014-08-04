@@ -83,8 +83,9 @@ def save_order():
     
     if post in ["orderbot ?", "orderbot?", "orderbot: ?"]:
         if db.exists(hash_user(user)):
-            curr = db.hget(db.get(hash_user(user)), user)
-            response = post_message("@%s your current order is: %s" % (user, curr))
+            curr_rest = db.get(hash_user(user))
+            curr_order = db.hget(curr_rest, user)
+            response = post_message("@%s your current order is %s: %s" % (user, curr_rest, curr_order))
         else:
             response = post_message("@%s, you have not yet ordered today" % user)
     elif user in no_restaurant_found:
