@@ -29,7 +29,20 @@ with open('restaurantList.txt') as f:
 restaurants = [[r.lower() for r in rest] for rest in restaurants] # Convert to lowercase
 
 def payload(text): return {"channel": "#seamless-thursday", "username": "OrderBot", "text": text, "icon_emoji": ":seamless:", 'link_names': 1}
-def snippet_payload(attachment): return {"channel": "#seamless-thursday", "username": "OrderBot", "icon_emoji": ":seamless:", "attachments": attachment, 'link_names': 1}
+def snippet_payload(attachment): return {"channel": "#seamless-thursday", "username": "OrderBot", "icon_emoji": ":seamless:", "attachments": [
+      {
+         "fallback":"New open task [Urgent]: <http://url_to_task|Test out Slack message attachments>",
+         "pretext":"New open task [Urgent]: <http://url_to_task|Test out Slack message attachments>",
+         "color":"#D00000",
+         "fields":[
+            {
+               "title":"Notes",
+               "value":"This is much easier than I thought it would be.",
+               "short": False
+            }
+         ]
+      }
+   ], 'link_names': 1}
 
 def add_order(user, restaurant, entree):
     # check for existence here?
@@ -71,7 +84,7 @@ def save_order():
     
         
     elif re.match(r'%s[,.:\- ;]help' % prefix, post):
-        return json.dumps(snippet_payload([{"text" : "hello hello test test", "fallback" : "this is the fallback", "fields" : [{"title":"title", "value": "some text"}]}]))
+        return json.dumps(snippet_payload())
         #return post_message('Order with this format: `orderBot: restaurant: order` For example: `orderBot: Mizu: Lunch Special, Spicy Tuna Roll, Yellowtail Roll, Salmon Roll, special instructions "Label Jim, extra spicy"`')
 
     elif order:
