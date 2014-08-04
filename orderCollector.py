@@ -142,7 +142,7 @@ def save_order():
                     for name, order in order_hash.iteritems():
                         table.add_row((name, rest, order))
             
-            upload_response = requests.post(postURL, data=json.dumps(order_list(filename, table)))
+            upload_response = requests.get(postURL, payload=json.dumps(order_list(filename, table)))
             response = post_message(upload_response.text)
             
         
