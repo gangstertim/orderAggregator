@@ -77,13 +77,12 @@ def parse_order(user, order):
     return post_message('@%s, %s is not one of our usual restaurants.  Should we save your order in the "Miscellaneous Restaurant" list? Yes/No' % (user, r))
 
 @app.route('/', methods=['POST'])
-def save_order():
+def save_order
+    print request.form
     post     = request.form['text'].lower().strip()
     user     = request.form['user_name']
     order    = re.match(r'%s\s*?:(.+?):(.+)' % prefix, post)
     response = ""
-    
-    print request.form
     
     if user in no_restaurant_found:
         if post in ["yes","y"]:
@@ -104,9 +103,8 @@ def save_order():
         else:
             response = post_message("I'm sorry @%s, I don't understand.  Do you want to change your order to %s?  Please answer yes (y) or no (n)." % (user, ': '.join(previous_order_found[user])))
     elif re.match(r'%s[,.:\- ;]help' % prefix, post):
-        response = json.dumps(snippet_payload())
-        #return post_message('Order with this format: `orderBot: restaurant: order` For example: `orderBot: Mizu: Lunch Special, Spicy Tuna Roll, Yellowtail Roll, Salmon Roll, special instructions "Label Jim, extra spicy"`')
-
+        #response = json.dumps(snippet_payload())
+        return post_message('Order with this format: `orderBot: restaurant: order` For example: `orderBot: Mizu: Lunch Special, Spicy Tuna Roll, Yellowtail Roll, Salmon Roll, special instructions "Label Jim, extra spicy"`.  To see if/what you have ordered, simply type `orderBot ?`')
     elif order:
         response = parse_order(user, order)
     
