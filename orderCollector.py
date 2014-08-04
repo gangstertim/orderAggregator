@@ -27,7 +27,7 @@ with open('restaurantList.txt') as f:
 
 restaurants = [[r.lower() for r in rest] for rest in restaurants] # Convert to lowercase
 
-def payload(text): return {"channel": "#seamless-thursday", "username": "OrderBot", "text": text, "icon_emoji": ":seamless:"}
+def payload(text): return {"channel": "#seamless-thursday", "username": "OrderBot", "text": text, "icon_emoji": ":seamless:", 'link_names': 1}
 
 def add_order(user, restaurant, entree):
     key = 'orders:%s' % restaurant
