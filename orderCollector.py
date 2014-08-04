@@ -78,36 +78,37 @@ def parse_order(user, order):
 def parse_admin_commands(user, post):
     #orderbot, list orders from [restaurant]
     #orderbot, list all orders
-    pattern = re.match(r'%s:\s*list:\s*(.*)' % prefix, post)
-    if pattern:
-        table = PrettyTable(["Name", "Restaurant", "Order"])
-        table.align["Name"] = 'l'
-        table.align["Restaurant"] = 'l'
-        table.align["Order"] = 'l'
+    if user in administrative_users:
+        pattern = re.match(r'%s:\s*list:\s*(.*)' % prefix, post)
+        if pattern:
+            table = PrettyTable(["Name", "Restaurant", "Order"])
+            table.align["Name"] = 'l'
+            table.align["Restaurant"] = 'l'
+            table.align["Order"] = 'l'
+                
+            rest = pattern.group(1).strip()
             
-        rest = pattern.group(1).strip()
-        
-        if rest == "all":
-            keys = db.keys("orders:*")
-            title = "All Orders"
-            for resthash in keys:
-                rest = resthash[7:]
-                order_hash = db.hgetall(resthash)
-                for name, order in order_hash.iteritems():
-                    table.add_row((name, rest, order))
-            return post_message("*%s*\n```%s```" % (title, str(table)))
-        else:
-            for restaurant in restaurants:
-                if rest in restaurant:
-                    rest = restaurant[0]
-                    title = rest 
-                    resthash = hash_restaurant(rest)
+            if rest == "all":
+                keys = db.keys("orders:*")
+                title = "All Orders"
+                for resthash in keys:
+                    rest = resthash[7:]
                     order_hash = db.hgetall(resthash)
                     for name, order in order_hash.iteritems():
                         table.add_row((name, rest, order))
-                    return post_message("*%s*\n```%s```" % (title, str(table)))
-        
-        return post_message("Nobody has ordered from a restaurant called %s" % rest)
+                return post_message("*%s*\n```%s```" % (title, str(table)))
+            else:
+                for restaurant in restaurants:
+                    if rest in restaurant:
+                        rest = restaurant[0]
+                        title = rest 
+                        resthash = hash_restaurant(rest)
+                        order_hash = db.hgetall(resthash)
+                        for name, order in order_hash.iteritems():
+                            table.add_row((name, rest, order))
+                        return post_message("*%s*\n```%s```" % (title, str(table)))
+            
+            return post_message("Nobody has ordered from a restaurant called %s" % rest)
 
     return ""
 
@@ -118,8 +119,10 @@ def save_order():
     order    = re.match(r'%s\s*?:(.+?):(.+)' % prefix, post)
     response = ""
     
-    
-    if post in ["orderbot ?", "orderbot?", "orderbot: ?"]:
+    response = parse_admin_commands(user, post)
+    if response:
+        pass
+    elif post in ["orderbot ?", "orderbot?", "orderbot: ?"]:
         if db.exists(hash_user(user)):
             curr_rest = db.get(hash_user(user))
             curr_order = db.hget(hash_restaurant(curr_rest), user)
@@ -150,9 +153,6 @@ def save_order():
         return post_message('Order with this format: `orderBot: restaurant: order`. For example: `orderBot: Mizu: Lunch Special, Spicy Tuna Roll, Yellowtail Roll, Salmon Roll, special instructions "Label Jim, extra spicy"`.  To see if/what you have ordered, simply type `orderBot: ?`')
     elif order:
         response = parse_order(user, order)
-    
-    elif user in administrative_users:
-        response = parse_admin_commands(user, post)
         
     return response
     
