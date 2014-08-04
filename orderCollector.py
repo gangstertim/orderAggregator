@@ -111,14 +111,14 @@ def save_order():
         else:
             response = post_message("I'm sorry @%s, I don't understand.  Do you want to change your order to %s?  Please answer yes (y) or no (n)." % (user, ': '.join(previous_order_found[user])))
     elif re.match(r'%s[,.:\- ;]help' % prefix, post):
-        return post_message('Order with this format: `orderBot: restaurant: order` For example: `orderBot: Mizu: Lunch Special, Spicy Tuna Roll, Yellowtail Roll, Salmon Roll, special instructions "Label Jim, extra spicy"`.  To see if/what you have ordered, simply type `orderBot: ?`')
+        return post_message('Order with this format: `orderBot: restaurant: order`. For example: `orderBot: Mizu: Lunch Special, Spicy Tuna Roll, Yellowtail Roll, Salmon Roll, special instructions "Label Jim, extra spicy"`.  To see if/what you have ordered, simply type `orderBot: ?`')
     elif order:
         response = parse_order(user, order)
     
     elif user in administrative_users:
         #orderbot, list orders from [restaurant]
         #orderbot, list all orders
-        pattern = re.match(r'%s,? list all orders\s*?(?:from)?(.*)' % prefix, post)
+        pattern = re.match(r'%s,? list all orders\s*(?:from)?(.*)' % prefix, post)
         
         if pattern:
             table = PrettyTable(["Name", "Restaurant", "Order"])
