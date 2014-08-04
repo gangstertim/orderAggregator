@@ -24,7 +24,7 @@ db                   = redis.StrictRedis()
 no_restaurant_found  = {}
 previous_order_found = {}
 administrative_users = set(['stephanie.musal', 'ldonaghy', 'dseminara', 'tim'])
-postURL              = 'https://slack.com/api/chat.postMessage'
+postURL              = 'https://slack.com/api/files.upload'
 
 with open('token.txt') as t:
     token = t.read()
