@@ -69,9 +69,6 @@ def save_order():
         else:
             return post_message("I'm sorry @%s, I don't understand.  Do you want to add your order of `%s` to the miscellaneous restaurant `%s`?  Please answer yes or no." % (user, special_user_orders[user][1], special_user_orders[user][0]))
     
-    elif user in administrative_users:
-        #add list_orders logic
-        pass
         
     elif re.match(r'%s[,.:\- ;]help' % prefix, post):
         return json.dumps(snippet_payload({"text" : "hello hello test test", "fallback" : "this is the fallback", "fields" : [{"title":"title", "value": "some text"}]}))
@@ -87,8 +84,12 @@ def save_order():
 
         special_user_orders[user] = (r, e)
         return post_message('@%s, %s is not one of our usual restaurants.  Should we save your order in the "Miscellaneous Restaurant" list? Yes/No' % (user, r))
-    return ""
+    
+    elif user in administrative_users:
+        #add list_orders logic
+        pass
 
+    return ""
 def post_message(message):
     return json.dumps(payload(message))
 
