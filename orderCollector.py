@@ -27,8 +27,8 @@ postURL              = 'https://slack.com/api/chat.postMessage'
 
    
    
-with open('token.txt' as t:
-    token = json.load(t)
+with open('token.txt') as t:
+    token = t.read()
     
 with open('restaurantList.txt') as f:
     restaurants = [[r.lower() for r in rest] for rest in json.load(f)] # Convert to lowercase
