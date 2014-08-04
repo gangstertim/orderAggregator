@@ -17,11 +17,11 @@ from schema import Use, Schema
 from flask import Flask, request
 from datetime import datetime, timedelta
 
-app     = Flask(__name__)
-prefix  = 'orderbot'
-db      = redis.StrictRedis()
-special_user_orders = {}   #orders which don't match regular restaurants and are pending classification
-administrative_users = ['stephanie.musal', 'ldonaghy', 'dseminara', 'tim']
+app                  = Flask(__name__)
+prefix               = 'orderbot'
+db                   = redis.StrictRedis()
+special_user_orders  = {}   #orders which don't match regular restaurants and are pending classification
+administrative_users = set(['stephanie.musal', 'ldonaghy', 'dseminara', 'tim'])
 
 with open('restaurantList.txt') as f:
     restaurants = json.load(f)
@@ -51,9 +51,9 @@ def add_order(user, restaurant, entree):
     d = datetime.now()
     db.hset(resthash, user, entree)
     db.set(userhash, resthash)
-    exptime = int((datetime(d.year, d.month, d.day) + timedelta(1) - d).total_seconds())
-    db.expire(resthash, exptime)
-    db.expire(userhash, exptime)
+    exptime = datetime(d.year, d.month, d.day) + timedelta(1)
+    db.expireat(resthash, exptime)
+    db.expireat(userhash, exptime)
     
 def list_orders(restaurant):
     if restaurant == "all":
