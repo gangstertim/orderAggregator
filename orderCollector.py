@@ -15,12 +15,13 @@ import re, json, redis
 from docopt import docopt
 from schema import Use, Schema
 from flask import Flask, request
+from datetime import datetime, timedelta
 
 app     = Flask(__name__)
 prefix  = 'orderbot'
-exptime = 60*60*24*2 # Two days
 db      = redis.StrictRedis()
 special_user_orders = {}   #orders which don't match regular restaurants and are pending classification
+administrative_users = ['stephanie.musal', 'ldonaghy', 'dseminara', 'tim']
 
 with open('restaurantList.txt') as f:
     restaurants = json.load(f)
@@ -28,11 +29,25 @@ with open('restaurantList.txt') as f:
 restaurants = [[r.lower() for r in rest] for rest in restaurants] # Convert to lowercase
 
 def payload(text): return {"channel": "#seamless-thursday", "username": "OrderBot", "text": text, "icon_emoji": ":seamless:", 'link_names': 1}
+def snippet_payload(attachment): return {"channel": "#seamless-thursday", "username": "OrderBot", "icon_emoji": ":seamless:", "attachment": attachment, 'link_names': 1}
 
 def add_order(user, restaurant, entree):
-    key = 'orders:%s' % restaurant
-    db.rpush(key, '%s: %s' % (user, entree))
-    db.expire(key, exptime)
+    # check for existence here?
+    resthash = 'orders:%s' % restaurant
+    userhash = 'orderbot:users:%s' % user
+    d = datetime.now()
+    db.hset(resthash, user, entree)
+    db.set(user, resthash)
+    exptime = datetime(d.year, d.month, d.day) + timedelta(1)
+    db.expireat(resthash, exptime)
+    db.expireat(userhash, exptime)
+    
+def list_orders(restaurant):
+    if restaurant == "all":
+        #return all orders
+    else:
+        #return restaurant specific orders
+        orders = db.get(restaurant);
 
 @app.route('/', methods=['POST'])
 def save_order():
@@ -51,9 +66,14 @@ def save_order():
             return post_message("Okay @%s, I won't add your order. Feel free to place a new one." % user)
         else:
             return post_message("I'm sorry @%s, I don't understand.  Do you want to add your order of `%s` to the miscellaneous restaurant `%s`?  Please answer yes or no." % (user, special_user_orders[user][1], special_user_orders[user][0]))
+    
+    elif user in administrative_users:
+        #add list_orders logic
         
     elif re.match(r'%s[,.:\- ;]help' % prefix, post):
-        return post_message('Order with this format: `orderBot: restaurant: order` For example: `orderBot: Mizu: Lunch Special, Spicy Tuna Roll, Yellowtail Roll, Salmon Roll, special instructions "Label Jim, extra spicy"`')
+        return json.dumps(snippet_payload({"text" : "hello hello test test", "fallback" : "this is the fallback", "fields" : [{"title":"title", "value": "some text"}]})
+        #return post_message('Order with this format: `orderBot: restaurant: order` For example: `orderBot: Mizu: Lunch Special, Spicy Tuna Roll, Yellowtail Roll, Salmon Roll, special instructions "Label Jim, extra spicy"`')
+
     elif order:
         r = order.group(1).strip() # restaurant
         e = order.group(2).strip() # entree
