@@ -25,8 +25,6 @@ previous_order_found = {}
 administrative_users = set(['stephanie.musal', 'ldonaghy', 'dseminara', 'tim'])
 postURL              = 'https://slack.com/api/chat.postMessage'
 
-   
-   
 with open('token.txt') as t:
     token = t.read()
     
@@ -34,8 +32,7 @@ with open('restaurantList.txt') as f:
     restaurants = [[r.lower() for r in rest] for rest in json.load(f)] # Convert to lowercase
 
 def payload(text): return {"channel": "#seamless-thursday", "username": "OrderBot", "text": text, "icon_emoji": ":seamless:", 'link_names': 1}
-def snippet_payload(): return {"channel": "#seamless-thursday", "username": "OrderBot", "icon_emoji": ":seamless:", "attachments":  "something something blah blah", 'link_names': 1}
-    
+
 def hash_restaurant(r): return 'orders:%s' % r
 def hash_user(u): return 'orderbot:users:%s' % u
 
@@ -78,17 +75,19 @@ def parse_order(user, order):
 
 @app.route('/', methods=['POST'])
 def save_order():
-    
-    print request.form
-    
     post     = request.form['text'].lower().strip()
     user     = request.form['user_name']
     order    = re.match(r'%s\s*?:(.+?):(.+)' % prefix, post)
     response = ""
     
     
-    
-    if user in no_restaurant_found:
+    if post in ["orderbot ?", "orderbot?", "orderbot: ?"]:
+        if db.exists(userhash(user)):
+            curr = db.hget(db.get(userhash(user)), user)
+            response = post_message("@%s your current order is: %s" % (user, curr))
+        else:
+            response = post_message("@%s, you have not yet ordered today" % user)
+    elif user in no_restaurant_found:
         if post in ["yes","y"]:
             response = add_order(user, "miscellaneous", ": ".join(no_restaurant_found[user]))
             del no_restaurant_found[user]
@@ -107,8 +106,7 @@ def save_order():
         else:
             response = post_message("I'm sorry @%s, I don't understand.  Do you want to change your order to %s?  Please answer yes (y) or no (n)." % (user, ': '.join(previous_order_found[user])))
     elif re.match(r'%s[,.:\- ;]help' % prefix, post):
-        #response = json.dumps(snippet_payload())
-        return post_message('Order with this format: `orderBot: restaurant: order` For example: `orderBot: Mizu: Lunch Special, Spicy Tuna Roll, Yellowtail Roll, Salmon Roll, special instructions "Label Jim, extra spicy"`.  To see if/what you have ordered, simply type `orderBot ?`')
+        return post_message('Order with this format: `orderBot: restaurant: order` For example: `orderBot: Mizu: Lunch Special, Spicy Tuna Roll, Yellowtail Roll, Salmon Roll, special instructions "Label Jim, extra spicy"`.  To see if/what you have ordered, simply type `orderBot: ?`')
     elif order:
         response = parse_order(user, order)
     
