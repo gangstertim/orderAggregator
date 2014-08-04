@@ -20,6 +20,9 @@ app     = Flask(__name__)
 prefix  = 'orderbot'
 exptime = 60*60*24*2 # Two days
 db      = redis.StrictRedis()
+special_user_orders = {}   #orders which don't match regular restaurants and are pending classification
+
+
 with open('restaurantList.txt') as f:
     restaurants = json.load(f)
 
@@ -32,7 +35,11 @@ def save_order():
     post  = request.form['text'].lower().strip()
     user  = request.form['user_name']
     order = re.match(r'%s\s*?:(.+?):(.+)' % prefix, post)
-    if order:
+
+    if re.match(r'%s[,.:\- ;]help' % prefix, post):
+        return post_message('Order with this format: ```orderBot: restaurant: order```.  For example, ```orderBot: Mizu: Lunch Special, Spicy Tuna Roll, Yellowtail Roll, Salmon Roll, special instructions "Label Jim, extra spicy"'
+
+    elif order:
         restaurant = order.group(1).strip()
         entree     = order.group(2).strip()
         for r in restaurants:
@@ -40,8 +47,9 @@ def save_order():
                 db.rpush('orders:%s' % r[0], '%s: %s' % (user, entree))
                 db.expire('orders:%s' % r[0], exptime)
                 return post_message("%s your order to %s was added successfully" % (user, r[0]))
-                
-        return post_message("%s, %s could not be found" % (user, restaurant))
+
+        special_user_orders[user] = (restaurant, entree)
+        return post_message("%s, %s is not one of our usual restaurants.  Should we save your order in the \"Miscellaneous Restaurant\" list? Yes/No" % (user, restaurant))
     return ""
 
 def post_message(message):
