@@ -20,40 +20,42 @@ from datetime import datetime, timedelta
 app                  = Flask(__name__)
 prefix               = 'orderbot'
 db                   = redis.StrictRedis()
-special_user_orders  = {}   #orders which don't match regular restaurants and are pending classification
+no_restaurant_found  = {}
+previous_order_found - {}
 administrative_users = set(['stephanie.musal', 'ldonaghy', 'dseminara', 'tim'])
+postURL              = 'https://slack.com/api/chat.postMessage'
 
+   
+   
+with open('token.txt' as t:
+    token = json.load(t)
+    
 with open('restaurantList.txt') as f:
-    restaurants = json.load(f)
-
-restaurants = [[r.lower() for r in rest] for rest in restaurants] # Convert to lowercase
+    restaurants = [[r.lower() for r in rest] for rest in json.load(f)] # Convert to lowercase
 
 def payload(text): return {"channel": "#seamless-thursday", "username": "OrderBot", "text": text, "icon_emoji": ":seamless:", 'link_names': 1}
-def snippet_payload(): return {"channel": "#seamless-thursday", "username": "OrderBot", "icon_emoji": ":seamless:", "attachments": [
-      {
-         "fallback":"New open task [Urgent]: <http://url_to_task|Test out Slack message attachments>",
-         "pretext":"New open task [Urgent]: <http://url_to_task|Test out Slack message attachments>",
-         "color":"#D00000",
-         "fields":[
-            {
-               "title":"Notes",
-               "value":"This is much easier than I thought it would be.",
-               "short": False
-            }
-         ]
-      }
-   ], 'link_names': 1}
+def snippet_payload(): return {"channel": "#seamless-thursday", "username": "OrderBot", "icon_emoji": ":seamless:", "attachments":  something something blah blah, 'link_names': 1}
+    
+def hash_restaurant(r): return 'orders:%s' % r
+def hash_user(u): return 'orderbot:users:%s' % u
 
-def add_order(user, restaurant, entree):
-    # check for existence here?
-    resthash = 'orders:%s' % restaurant
-    userhash = 'orderbot:users:%s' % user
+def add_order(user, restaurant, entree, overwrite=False):
+    resthash = hash_restaurant(restaurant)
+    userhash = hash_user(user)
+    if db.exists(userhash):
+        # user already placed order
+        if overwrite:
+            db.hdel(db.get(userhash), user)
+        else:
+            previous_order_found[user] = (restaurant, entree)
+            return post_message("@%s you have previously placed an order today.  Would you like to replace that order? Yes/No" % (user))
     d = datetime.now()
     db.hset(resthash, user, entree)
     db.set(userhash, resthash)
     exptime = datetime(d.year, d.month, d.day) + timedelta(1)
     db.expireat(resthash, exptime)
     db.expireat(userhash, exptime)
+    return post_message("@%s, your order to %s was added successfully" % (user, restaurant))
     
 def list_orders(restaurant):
     if restaurant == "all":
@@ -63,46 +65,57 @@ def list_orders(restaurant):
         pass
         #return restaurant specific orders
         #orders = db.get(restaurant);
+        
+def parse_order(user, order):
+    r = order.group(1).strip() # restaurant
+    e = order.group(2).strip() # entree
+    for restaurant in restaurants:
+        if r in restaurant:
+            return add_order(user, restaurant[0], e)
+
+    no_restaurant_found[user] = (r, e)
+    return post_message('@%s, %s is not one of our usual restaurants.  Should we save your order in the "Miscellaneous Restaurant" list? Yes/No' % (user, r))
 
 @app.route('/', methods=['POST'])
 def save_order():
-    post  = request.form['text'].lower().strip()
-    user  = request.form['user_name']
-    order = re.match(r'%s\s*?:(.+?):(.+)' % prefix, post)
+    post     = request.form['text'].lower().strip()
+    user     = request.form['user_name']
+    order    = re.match(r'%s\s*?:(.+?):(.+)' % prefix, post)
+    response = ""
     
-    if user in special_user_orders:
-        if post == "yes" or post == "y":
-            add_order(user, "miscellaneous", ": ".join(special_user_orders[user]))
-            temp = special_user_orders[user][0]
-            del special_user_orders[user]
-            return post_message("Great! @%s,  I'll add your order to %s under the category of miscellaneous restuarants" % (user, temp))
-        elif post == "no" or post == "n":
-            del special_user_orders[user]
-            return post_message("Okay @%s, I won't add your order. Feel free to place a new one." % user)
+    print request.form
+    
+    if user in no_restaurant_found:
+        if post in ["yes","y"]:
+            response = add_order(user, "miscellaneous", ": ".join(no_restaurant_found[user]))
+            del no_restaurant_found[user]
+        elif post in ["no","n"]:
+            response = post_message("Okay @%s, I won't add your order. Feel free to place a new one." % user)
+            del no_restaurant_found[user]
         else:
-            return post_message("I'm sorry @%s, I don't understand.  Do you want to add your order of `%s` to the miscellaneous restaurant `%s`?  Please answer yes or no." % (user, special_user_orders[user][1], special_user_orders[user][0]))
-    
-        
+            response = post_message("I'm sorry @%s, I don't understand.  Do you want to add your order of `%s` to the miscellaneous restaurant `%s`?  Please answer yes (y) or no (n)." % (user, no_restaurant_found[user][1], no_restaurant_found[user][0]))
+    elif user in previous_order_found:
+        if post in ["yes","y"]:
+            response = add_order(user, *previous_order_found[user], overwrite=True)
+            del previous_order_found[user]
+        elif post in ["no","n"]:
+            response = post_message("Okay @%s, I won't overwrite your order. Feel free to place a new one." % user)
+            del previous_order_found[user]
+        else:
+            response = post_message("I'm sorry @%s, I don't understand.  Do you want to change your order to %s?  Please answer yes (y) or no (n)." % (user, ': '.join(previous_order_found[user])))
     elif re.match(r'%s[,.:\- ;]help' % prefix, post):
-        return json.dumps(snippet_payload())
+        response = json.dumps(snippet_payload())
         #return post_message('Order with this format: `orderBot: restaurant: order` For example: `orderBot: Mizu: Lunch Special, Spicy Tuna Roll, Yellowtail Roll, Salmon Roll, special instructions "Label Jim, extra spicy"`')
 
     elif order:
-        r = order.group(1).strip() # restaurant
-        e = order.group(2).strip() # entree
-        for restaurant in restaurants:
-            if r in restaurant:
-                add_order(user, restaurant[0], e)
-                return post_message("@%s, your order to %s was added successfully" % (user, restaurant[0]))
-
-        special_user_orders[user] = (r, e)
-        return post_message('@%s, %s is not one of our usual restaurants.  Should we save your order in the "Miscellaneous Restaurant" list? Yes/No' % (user, r))
+        response = parse_order(user, order)
     
     elif user in administrative_users:
         #add list_orders logic
         pass
 
-    return ""
+    return response
+    
 def post_message(message):
     return json.dumps(payload(message))
 
