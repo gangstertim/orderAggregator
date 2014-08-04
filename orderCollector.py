@@ -77,12 +77,16 @@ def parse_order(user, order):
     return post_message('@%s, %s is not one of our usual restaurants.  Should we save your order in the "Miscellaneous Restaurant" list? Yes/No' % (user, r))
 
 @app.route('/', methods=['POST'])
-def save_order
+def save_order():
+    
     print request.form
+    
     post     = request.form['text'].lower().strip()
     user     = request.form['user_name']
     order    = re.match(r'%s\s*?:(.+?):(.+)' % prefix, post)
     response = ""
+    
+    
     
     if user in no_restaurant_found:
         if post in ["yes","y"]:
