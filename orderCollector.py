@@ -149,7 +149,7 @@ def save_order():
             del previous_order_found[user]
         else:
             response = post_message("I'm sorry @%s, I don't understand.  Do you want to change your order to %s?  Please answer yes (y) or no (n)." % (user, ': '.join(previous_order_found[user])))
-    elif re.match(r'%s[,.:\- ;]\s*help' % prefix, post):
+    elif re.match(r'%s[,.:\-;]\s*help' % prefix, post):
         return post_message('Order with this format: `orderBot: restaurant: order`. For example: `orderBot: Mizu: Lunch Special, Spicy Tuna Roll, Yellowtail Roll, Salmon Roll, special instructions "Label Jim, extra spicy"`.  To see if/what you have ordered, simply type `orderBot: ?`')
     elif order:
         response = parse_order(user, order)
