@@ -38,7 +38,7 @@ def save_order():
         for r in restaurants:
             if restaurant in r:
                 db.rpush('orders:%s' % r[0], '%s: %s' % (user, entree))
-                expire('orders:%s' % r[0], exptime)
+                db.expire('orders:%s' % r[0], exptime)
                 return post_message("%s your order to %s was added successfully" % (user, r[0]))
                 
         return post_message("%s, %s could not be found" % (user, restaurant))
