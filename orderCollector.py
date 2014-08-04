@@ -29,7 +29,7 @@ with open('restaurantList.txt') as f:
 restaurants = [[r.lower() for r in rest] for rest in restaurants] # Convert to lowercase
 
 def payload(text): return {"channel": "#seamless-thursday", "username": "OrderBot", "text": text, "icon_emoji": ":seamless:", 'link_names': 1}
-def snippet_payload(attachment): return {"channel": "#seamless-thursday", "username": "OrderBot", "icon_emoji": ":seamless:", "attachment": attachment, 'link_names': 1}
+def snippet_payload(attachment): return {"channel": "#seamless-thursday", "username": "OrderBot", "icon_emoji": ":seamless:", "attachments": attachment, 'link_names': 1}
 
 def add_order(user, restaurant, entree):
     # check for existence here?
