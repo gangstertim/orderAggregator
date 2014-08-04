@@ -44,10 +44,12 @@ def add_order(user, restaurant, entree):
     
 def list_orders(restaurant):
     if restaurant == "all":
+        pass
         #return all orders
     else:
+        pass
         #return restaurant specific orders
-        orders = db.get(restaurant);
+        #orders = db.get(restaurant);
 
 @app.route('/', methods=['POST'])
 def save_order():
