@@ -29,7 +29,7 @@ with open('restaurantList.txt') as f:
 restaurants = [[r.lower() for r in rest] for rest in restaurants] # Convert to lowercase
 
 def payload(text): return {"channel": "#seamless-thursday", "username": "OrderBot", "text": text, "icon_emoji": ":seamless:", 'link_names': 1}
-def snippet_payload(attachment): return {"channel": "#seamless-thursday", "username": "OrderBot", "icon_emoji": ":seamless:", "attachments": [
+def snippet_payload(): return {"channel": "#seamless-thursday", "username": "OrderBot", "icon_emoji": ":seamless:", "attachments": [
       {
          "fallback":"New open task [Urgent]: <http://url_to_task|Test out Slack message attachments>",
          "pretext":"New open task [Urgent]: <http://url_to_task|Test out Slack message attachments>",
