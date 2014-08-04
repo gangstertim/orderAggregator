@@ -74,6 +74,42 @@ def parse_order(user, order):
 
     no_restaurant_found[user] = (r, e)
     return post_message('@%s, %s is not one of our usual restaurants.  Should we save your order in the "Miscellaneous Restaurant" list? Yes/No' % (user, r))
+    
+def parse_admin_commands(user, post):
+    #orderbot, list orders from [restaurant]
+    #orderbot, list all orders
+    pattern = re.match(r'%s:\s*list:\s*(.*)' % prefix, post)
+    if pattern:
+        table = PrettyTable(["Name", "Restaurant", "Order"])
+        table.align["Name"] = 'l'
+        table.align["Restaurant"] = 'l'
+        table.align["Order"] = 'l'
+            
+        rest = pattern.group(1).strip()
+        
+        if rest == "all":
+            keys = db.keys("orders:*")
+            title = "All Orders"
+            for resthash in keys:
+                rest = resthash[7:]
+                order_hash = db.hgetall(resthash)
+                for name, order in order_hash.iteritems():
+                    table.add_row((name, rest, order))
+            return post_message("*%s*\n```%s```" % (title, str(table)))
+        else:
+            for restaurant in restaurants:
+                if rest in restaurant:
+                    rest = restaurant[0]
+                    title = rest 
+                    resthash = hash_restaurant(rest)
+                    order_hash = db.hgetall(resthash)
+                    for name, order in order_hash.iteritems():
+                        table.add_row((name, rest, order))
+                    return post_message("*%s*\n```%s```" % (title, str(table)))
+        
+        return post_message("Nobody has ordered from a restaurant called %s" % rest)
+
+    return ""
 
 @app.route('/', methods=['POST'])
 def save_order():
@@ -116,35 +152,7 @@ def save_order():
         response = parse_order(user, order)
     
     elif user in administrative_users:
-        #orderbot, list orders from [restaurant]
-        #orderbot, list all orders
-        pattern = re.match(r'%s,? list all orders\s*(?:from)?(.*)' % prefix, post)
-        
-        if pattern:
-            table = PrettyTable(["Name", "Restaurant", "Order"])
-            table.align["Name"] = 'l'
-            table.align["Restaurant"] = 'l'
-            table.align["Order"] = 'l'
-            
-            rest = pattern.group(1).strip()
-            if rest:
-                title = rest 
-                resthash = hash_restaurant(rest)
-                order_hash = db.hgetall(resthash)
-                for name, order in order_hash.iteritems():
-                    table.add_row((name, rest, order))
-            else:
-                keys = db.keys("orders:*")
-                title = "All Orders"
-                for resthash in keys:
-                    rest = resthash[7:]
-                    order_hash = db.hgetall(resthash)
-                    for name, order in order_hash.iteritems():
-                        table.add_row((name, rest, order))
-            
-            #upload_response = requests.get(postURL, data=json.dumps(order_list(filename, table)))
-            response = post_message("*%s*\n```%s```" % (title, str(table)))
-            
+        response = parse_admin_commands(user, post)
         
     return response
     
