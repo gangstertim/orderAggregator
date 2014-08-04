@@ -85,7 +85,7 @@ def save_order():
         if db.exists(hash_user(user)):
             curr_rest = db.get(hash_user(user))
             curr_order = db.hget(curr_rest, user)
-            response = post_message("@%s your current order is %s: %s" % (user, curr_rest, curr_order))
+            response = post_message("@%s your current order is `%s` from `%s`" % (user, curr_order, curr_rest.replace('orders:', '', 1)))
         else:
             response = post_message("@%s, you have not yet ordered today" % user)
     elif user in no_restaurant_found:
@@ -114,8 +114,12 @@ def save_order():
     elif user in administrative_users:
         #orderbot, list orders from [restaurant]
         #orderbot, list all orders
-        pass
-
+        if post == "orderbot, list all orders":
+            pass
+        elif re.match(r'%s, list all orders from (.*)' % prefix, post):
+            pass
+        else: pass
+        
     return response
     
 def post_message(message):
