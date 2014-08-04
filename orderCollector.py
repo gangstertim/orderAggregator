@@ -71,7 +71,7 @@ def save_order():
     
         
     elif re.match(r'%s[,.:\- ;]help' % prefix, post):
-        return json.dumps(snippet_payload({"text" : "hello hello test test", "fallback" : "this is the fallback", "fields" : [{"title":"title", "value": "some text"}]}))
+        return json.dumps(snippet_payload([{"text" : "hello hello test test", "fallback" : "this is the fallback", "fields" : [{"title":"title", "value": "some text"}]}]))
         #return post_message('Order with this format: `orderBot: restaurant: order` For example: `orderBot: Mizu: Lunch Special, Spicy Tuna Roll, Yellowtail Roll, Salmon Roll, special instructions "Label Jim, extra spicy"`')
 
     elif order:
