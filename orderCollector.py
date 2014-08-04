@@ -82,8 +82,8 @@ def save_order():
     
     
     if post in ["orderbot ?", "orderbot?", "orderbot: ?"]:
-        if db.exists(userhash(user)):
-            curr = db.hget(db.get(userhash(user)), user)
+        if db.exists(hash_user(user)):
+            curr = db.hget(db.get(hash_user(user)), user)
             response = post_message("@%s your current order is: %s" % (user, curr))
         else:
             response = post_message("@%s, you have not yet ordered today" % user)
@@ -111,7 +111,8 @@ def save_order():
         response = parse_order(user, order)
     
     elif user in administrative_users:
-        #add list_orders logic
+        #orderbot, list orders from [restaurant]
+        #orderbot, list all orders
         pass
 
     return response
