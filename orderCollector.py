@@ -71,6 +71,7 @@ def save_order():
     
     elif user in administrative_users:
         #add list_orders logic
+        pass
         
     elif re.match(r'%s[,.:\- ;]help' % prefix, post):
         return json.dumps(snippet_payload({"text" : "hello hello test test", "fallback" : "this is the fallback", "fields" : [{"title":"title", "value": "some text"}]})
