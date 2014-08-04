@@ -38,9 +38,9 @@ def add_order(user, restaurant, entree):
     d = datetime.now()
     db.hset(resthash, user, entree)
     db.set(userhash, resthash)
-    exptime = datetime(d.year, d.month, d.day) + timedelta(1) - d
-    db.expire(resthash, exptime.total_seconds())
-    db.expire(userhash, exptime.total_seconds())
+    exptime = int((datetime(d.year, d.month, d.day) + timedelta(1) - d).total_seconds())
+    db.expire(resthash, exptime)
+    db.expire(userhash, exptime)
     
 def list_orders(restaurant):
     if restaurant == "all":
