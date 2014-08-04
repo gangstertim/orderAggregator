@@ -27,7 +27,7 @@ administrative_users = set(['stephanie.musal', 'ldonaghy', 'dseminara', 'tim'])
 postURL              = 'https://slack.com/api/files.upload'
 
 with open('token.txt') as t:
-    token = t.read()
+    token = t.read().strip()
     
 with open('restaurantList.txt') as f:
     restaurants = [[r.lower() for r in rest] for rest in json.load(f)] # Convert to lowercase
