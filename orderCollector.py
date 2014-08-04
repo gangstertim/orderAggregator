@@ -41,14 +41,14 @@ def save_order():
     order = re.match(r'%s\s*?:(.+?):(.+)' % prefix, post)
     
     if user in special_user_orders:
-        if post = "yes" or post = "y":
+        if post == "yes" or post == "y":
             add_order(user, *special_user_orders[user])
             temp = special_user_orders[user][0]
             del special_user_orders[user]
-            return "Great!  I'll add your order to %s under the category of miscellaneous restuarants" % temp
-        elif post = "no" or post = "n":
+            return post_message("Great!  I'll add your order to %s under the category of miscellaneous restuarants" % temp)
+        elif post == "no" or post == "n":
             del special_user_orders[user]
-            return post_message: "Okay, I won't add your order. Feel free to place a new one."
+            return post_message("Okay, I won't add your order. Feel free to place a new one.")
         else:
             return post_message("""I'm sorry %s, I don't understand.  Do you want to add your order of ```%s``` 
                                 to the miscellaneous restaurant ```%s```?  Please answer yes or no.""" % (user, special_user_orders[user][1], special_user_orders[user][0]))
