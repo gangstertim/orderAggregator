@@ -34,7 +34,7 @@ with open('restaurantList.txt') as f:
     restaurants = [[r.lower() for r in rest] for rest in json.load(f)] # Convert to lowercase
 
 def payload(text): return {"channel": "#seamless-thursday", "username": "OrderBot", "text": text, "icon_emoji": ":seamless:", 'link_names': 1}
-def snippet_payload(): return {"channel": "#seamless-thursday", "username": "OrderBot", "icon_emoji": ":seamless:", "attachments":  something something blah blah, 'link_names': 1}
+def snippet_payload(): return {"channel": "#seamless-thursday", "username": "OrderBot", "icon_emoji": ":seamless:", "attachments":  "something something blah blah", 'link_names': 1}
     
 def hash_restaurant(r): return 'orders:%s' % r
 def hash_user(u): return 'orderbot:users:%s' % u
