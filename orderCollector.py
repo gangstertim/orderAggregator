@@ -131,23 +131,23 @@ class OrderBot(object):
         return 'Order with this format: `orderBot: add: restaurant: order`. For example: `orderBot: add: Mizu: Lunch Special, Spicy Tuna Roll, Yellowtail Roll, Salmon Roll, special instructions "Label Jim, extra spicy"`.  To see if/what you have ordered, simply type `orderBot: status`'
 
     def orderconfirm(self, user):
-        if user in self.no_restaurant_found:
-            r = self.add_order(user, 'miscellaneous', ': '.join(self.no_restaurant_found[user]))
-            del self.no_restaurant_found[user]
-            return r
-        elif user in self.previous_order_found:
+        if user in self.previous_order_found:
             r = self.add_order(user, *self.previous_order_found[user], overwrite=True)
             del self.previous_order_found[user]
+            return r
+        elif user in self.no_restaurant_found:
+            r = self.add_order(user, 'miscellaneous', ': '.join(self.no_restaurant_found[user]))
+            del self.no_restaurant_found[user]
             return r
         return ""
         
     def orderdeny(self, user):
-        if user in self.no_restaurant_found:
-            del self.no_restaurant_found[user]
-            return "Okay @%s, I won't add your order. Feel free to place a new one." % user
-        elif user in self.previous_order_found:
+        if user in self.previous_order_found:
             del self.previous_order_found[user]
             return "Okay @%s, I won't overwrite your order. Feel free to place a new one." % user
+        elif user in self.no_restaurant_found:
+            del self.no_restaurant_found[user]
+            return "Okay @%s, I won't add your order. Feel free to place a new one." % user
         return ""
 
 def payload(text): return {"channel": "#seamless-thursday",
