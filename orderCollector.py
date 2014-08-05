@@ -21,7 +21,10 @@ from datetime import datetime, timedelta
 def payload(text): return {"channel": "#seamless-thursday",
                            "username": "OrderBot", "text": text,
                            "icon_emoji": ":seamless:", 'link_names': 1}
-def post_message(message): return json.dumps(payload(message))
+def post_message(message):
+    if message:
+        return json.dumps(payload(message))
+    return message
 def hash_restaurant(r): return 'orders:%s' % r
 def hash_user(u): return 'orderbot:users:%s' % u
 
@@ -42,7 +45,7 @@ def add_order(user, restaurant, entree, overwrite=False):
     exptime = datetime(d.year, d.month, d.day) + timedelta(1)
     db.expireat(resthash, exptime)
     db.expireat(userhash, exptime)
-    return post_message("@%s, your order to %s was added successfully" % (user, restaurant))
+    return "@%s, your order to %s was added successfully" % (user, restaurant)
     
 class Command(object):
     prefix = 'orderbot'
@@ -174,9 +177,7 @@ def main():
     except ValueError:
         pass
     else:
-        response = commands[i](user, post)
-        if response:
-            response = post_message(response)
+        response = post_message(commands[i](user, post))
         
     return response
     
