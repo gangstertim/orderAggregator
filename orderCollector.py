@@ -18,6 +18,9 @@ from flask import Flask, request
 from prettytable import PrettyTable
 from datetime import datetime, timedelta
 
+rest_prefix = 'orderbot:orders:'
+user_prefix = 'orderbot:users:'
+
 def payload(text): return {"channel": "#seamless-thursday",
                            "username": "OrderBot", "text": text,
                            "icon_emoji": ":seamless:", 'link_names': 1}
@@ -25,8 +28,8 @@ def post_message(message):
     if message:
         return json.dumps(payload(message))
     return message
-def hash_restaurant(r): return 'orders:%s' % r
-def hash_user(u): return 'orderbot:users:%s' % u
+def hash_restaurant(r): return rest_prefix + r
+def hash_user(u): return user_prefix + u
 
 def add_order(user, restaurant, entree, overwrite=False):
     resthash = hash_restaurant(restaurant)
@@ -88,10 +91,10 @@ class OrderList(Command):
             table.align["Order"] = 'l'
 
             if rest == 'all':
-                keys = db.keys('orders:*')
+                keys = db.keys(rest_prefix + '*')
                 title = 'All Orders'
                 for resthash in keys:
-                    rest = resthash[7:]
+                    rest = resthash.replace(rest_prefix, "", 1)
                     order_hash = db.hgetall(resthash)
                     for name, order in order_hash.iteritems():
                         table.add_row((name, rest, order))
