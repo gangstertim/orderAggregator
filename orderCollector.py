@@ -132,7 +132,7 @@ class OrderBot(object):
 
     def orderconfirm(self, user):
         if user in self.no_restaurant_found:
-            r = self.add_order(user, 'miscellaneous', ': '.join(self.previous_order_found[user]))
+            r = self.add_order(user, 'miscellaneous', ': '.join(self.no_restaurant_found[user]))
             del self.no_restaurant_found[user]
             return r
         elif user in self.previous_order_found:
