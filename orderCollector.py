@@ -18,71 +18,69 @@ from flask import Flask, request
 from prettytable import PrettyTable
 from datetime import datetime, timedelta
 
-rest_prefix = 'orderbot:orders:'
-user_prefix = 'orderbot:users:'
-
-def payload(text): return {"channel": "#seamless-thursday",
-                           "username": "OrderBot", "text": text,
-                           "icon_emoji": ":seamless:", 'link_names': 1}
-def post_message(message):
-    if message:
-        return json.dumps(payload(message))
-    return message
-def hash_restaurant(r): return rest_prefix + r
-def hash_user(u): return user_prefix + u
-
-def add_order(user, restaurant, entree, overwrite=False):
-    resthash = hash_restaurant(restaurant)
-    userhash = hash_user(user)
-    if db.exists(userhash):
-        # user already placed order
-        if overwrite:
-            db.hdel(db.get(userhash), user)
-        else:
-            r = db.get(userhash)
-            previous_order_found[user] = (restaurant, entree)
-            return post_message("@%s you have previously placed an order to %s today.  Would you like to replace that order? Please reply yes (y) or no (n)." % (user, r))
-    d = datetime.now()
-    db.hset(resthash, user, entree)
-    db.set(userhash, restaurant)
-    exptime = datetime(d.year, d.month, d.day) + timedelta(1)
-    db.expireat(resthash, exptime)
-    db.expireat(userhash, exptime)
-    return "@%s, your order to %s was added successfully" % (user, restaurant)
-    
-class Command(object):
-    prefix = 'orderbot'
-    def __init__(self, command):
-        self.command = command
-    def __eq__(self, other):
-        if isinstance(other, Command):
-            return self.command == other.command
-        elif isinstance(other, list):
-            return bool(len(other) > 1 and Command.prefix == other[0]
-                        and re.match(self.command, other[1], flags=re.I))
-        else:
-            return False
-    def __str__(self):
-        return self.command
-
-class OrderAdd(Command):
+class OrderBot(object):
     def __init__(self):
-        super(OrderAdd, self).__init__(r"add")
+        self.bot_prefix  = 'orderbot'
+        self.rest_prefix = '%s:orders:' % self.bot_prefix
+        self.user_prefix = '%s:users:' % self.bot_prefix
+        self.no_restaurant_found  = {}
+        self.previous_order_found = {}
+        self.fmap = {
+            r'add'   : self.orderadd
+            r'list'  : self.orderlist
+            r'status': self.orderstatus
+            r'help'  : self.orderhelp
+            r'?'     : self.orderhelp
+        }
+        self.fmap2 = {
+            r'yes'   : self.orderconfirm
+            r'y'     : self.orderconfirm
+            r'no'    : self.orderdeny
+            r'n'     : self.orderdeny
+        }
+
     def __call__(self, user, post):
-        if user in no_restaurant_found:
-            return '@%s, you cannot add an order until you confirm whether or not you would like to add your previous order of %s to the miscellaneous category.  Please reply yes (y) or no (n).' % (user, ': '.join(no_restaurant_found[user]))
-        elif user in previous_order_found:
-            return '@%s, you cannot add an order until you confirm whether or not you would like to replace your previous with %s.  Please reply yes (y) or no (n).' % (user, ': '.join(previous_order_found[user]))
+        if len(post) > 1 and self.bot_prefix == post[0] and post[1] in self.fmap:
+            return self.fmap[post[1]](user, post)
+        elif len(post) == 1 and post[0] in self.fmap2:
+            return self.fmap2[post[0]](user)
+        return ""
+
+    def hash_restaurant(self, r): return self.rest_prefix + r
+
+    def hash_user(self, u): return self.user_prefix + u
+
+    def add_order(self, user, restaurant, entree, overwrite=False):
+        resthash = self.hash_restaurant(restaurant)
+        userhash = self.hash_user(user)
+        if db.exists(userhash):
+            # user already placed order
+            if overwrite:
+                db.hdel(db.get(userhash), user)
+            else:
+                r = db.get(userhash)
+                self.previous_order_found[user] = (restaurant, entree)
+                return post_message("@%s you have previously placed an order to %s today.  Would you like to replace that order? Please reply yes (y) or no (n)." % (user, r))
+        d = datetime.now()
+        db.hset(resthash, user, entree)
+        db.set(userhash, restaurant)
+        exptime = datetime(d.year, d.month, d.day) + timedelta(1)
+        db.expireat(resthash, exptime)
+        db.expireat(userhash, exptime)
+        return "@%s, your order to %s was added successfully" % (user, restaurant)
+    
+    def orderadd(self, user, post):
+        if user in self.no_restaurant_found:
+            return '@%s, you cannot add an order until you confirm whether or not you would like to add your previous order of %s to the miscellaneous category.  Please reply yes (y) or no (n).' % (user, ': '.join(self.no_restaurant_found[user]))
+        elif user in self.previous_order_found:
+            return '@%s, you cannot add an order until you confirm whether or not you would like to replace your previous with %s.  Please reply yes (y) or no (n).' % (user, ': '.join(self.previous_order_found[user]))
         [rest, entree] = [s.strip() for s in post[2].split(':', 1)]
         if not rest in restaurants:
-            no_restaurant_found[user] = (rest, entree)
+            self.no_restaurant_found[user] = (rest, entree)
             return '@%s, %s is not one of our usual restaurants.  Should we save your order in the "Miscellaneous Restaurant" list? Yes/No' % (user, rest)
-        return add_order(user, restaurants[rest], entree)
+        return self.add_order(user, restaurants[rest], entree)
 
-class OrderList(Command):
-    def __init__(self):
-        super(OrderList, self).__init__(r"list")
-    def __call__(self, user, post):
+    def orderlist(self, user, post):
         if user in administrative_users:
             rest = post[2]
             table = PrettyTable(["Name", "Restaurant", "Order"])
@@ -91,10 +89,10 @@ class OrderList(Command):
             table.align["Order"] = 'l'
 
             if rest == 'all':
-                keys = db.keys(rest_prefix + '*')
+                keys = db.keys(self.rest_prefix + '*')
                 title = 'All Orders'
                 for resthash in keys:
-                    rest = resthash.replace(rest_prefix, "", 1)
+                    rest = resthash.replace(self.rest_prefix, "", 1)
                     order_hash = db.hgetall(resthash)
                     for name, order in order_hash.iteritems():
                         table.add_row((name, rest, order))
@@ -103,7 +101,7 @@ class OrderList(Command):
                 if rest in restaurants:
                     rest = restaurants[rest]
                     title = rest
-                    resthash = hash_restaurant(rest)
+                    resthash = self.hash_restaurant(rest)
                     order_hash = db.hgetall(resthash)
                     for name, order in order_hash.iteritems():
                         table.add_row((name, rest, order))
@@ -112,59 +110,50 @@ class OrderList(Command):
             return "Nobody has ordered from a restaurant called %s" % rest
         return ""
 
-class OrderStatus(Command):
-    def __init__(self):
-        super(OrderStatus, self).__init__(r"status")
-    def __call__(self, user, post):
-        if db.exists(hash_user(user)):
-            curr_rest = db.get(hash_user(user))
-            curr_order = db.hget(hash_restaurant(curr_rest), user)
+    def orderstatus(self, user, post):
+        if db.exists(self.hash_user(user)):
+            curr_rest = db.get(self.hash_user(user))
+            curr_order = db.hget(self.hash_restaurant(curr_rest), user)
             if curr_rest == "miscellaneous":
                 [curr_rest, curr_order] = [x.strip() for x in curr_order.split(':', 1)]
             return "@%s your current order is `%s` from `%s`" % (user, curr_order, curr_rest)
         else:
             return "@%s, you have not yet ordered today" % user
 
-class OrderHelp(Command):
-    def __init__(self):
-        super(OrderHelp, self).__init__(r"help|\?")
-    def __call__(self, user, post):
+    def orderhelp(self, user, post):
         return 'Order with this format: `orderBot: add: restaurant: order`. For example: `orderBot: add: Mizu: Lunch Special, Spicy Tuna Roll, Yellowtail Roll, Salmon Roll, special instructions "Label Jim, extra spicy"`.  To see if/what you have ordered, simply type `orderBot: status`'
 
-class OrderConfirm(Command):
-    def __init__(self):
-        super(OrderConfirm, self).__init__(r"yes|y|no|n")
-    def __eq__(self, other):
-        if isinstance(other, list):
-            return bool(len(other) == 1 and re.match(self.command, other[0], flags=re.I))
-        else:
-            return super(OrderConfirm, self).__eq__(other)
-    def __call__(self, user, post):
-        reply = post[0]
-        if reply in ['yes','y']:
-            if user in no_restaurant_found:
-                r = add_order(user, 'miscellaneous', ': '.join(previous_order_found[user]))
-                del no_restaurant_found[user]
-                return r
-            elif user in previous_order_found:
-                r = add_order(user, *previous_order_found[user], overwrite=True)
-                del previous_order_found[user]
-                return r
-        elif reply in ['no','n']:
-            if user in no_restaurant_found:
-                del no_restaurant_found[user]
-                return "Okay @%s, I won't add your order. Feel free to place a new one." % user
-            elif user in previous_order_found:
-                del previous_order_found[user]
-                return "Okay @%s, I won't overwrite your order. Feel free to place a new one." % user
+    def orderconfirm(self, user):
+        if user in self.no_restaurant_found:
+            r = self.add_order(user, 'miscellaneous', ': '.join(self.previous_order_found[user]))
+            del self.no_restaurant_found[user]
+            return r
+        elif user in self.previous_order_found:
+            r = self.add_order(user, *self.previous_order_found[user], overwrite=True)
+            del self.previous_order_found[user]
+            return r
+        return ""
+        
+    def orderdeny(self, user):
+        if user in self.no_restaurant_found:
+            del self.no_restaurant_found[user]
+            return "Okay @%s, I won't add your order. Feel free to place a new one." % user
+        elif user in self.previous_order_found:
+            del self.previous_order_found[user]
+            return "Okay @%s, I won't overwrite your order. Feel free to place a new one." % user
         return ""
 
+def payload(text): return {"channel": "#seamless-thursday",
+                           "username": "OrderBot", "text": text,
+                           "icon_emoji": ":seamless:", 'link_names': 1}
+def post_message(message):
+    if message:
+        return json.dumps(payload(message))
+    return message
 
 app                  = Flask(__name__)
 db                   = redis.StrictRedis()
-commands             = [OrderStatus(), OrderList(), OrderConfirm(), OrderHelp(), OrderAdd()]
-no_restaurant_found  = {}
-previous_order_found = {}
+orderbot             = OrderBot()
 administrative_users = frozenset(['stephanie.musal', 'ldonaghy', 'dseminara', 'tim'])
 
 with open('restaurantList.txt') as f:
@@ -174,15 +163,7 @@ with open('restaurantList.txt') as f:
 def main():
     post = [s.strip() for s in request.form['text'].lower().strip().split(':', 2)]
     user = request.form['user_name']
-    response = ""
-    try:
-        i = commands.index(post)
-    except ValueError:
-        pass
-    else:
-        response = post_message(commands[i](user, post))
-        
-    return response
+    return post_message(orderbot(user, post))
     
 if __name__ == '__main__':
     args = Schema({'--host': Use(str), '--port': Use(int), '--debug': Use(bool)}).validate(docopt(__doc__))
