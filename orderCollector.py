@@ -18,6 +18,13 @@ from flask import Flask, request
 from prettytable import PrettyTable
 from datetime import datetime, timedelta
 
+with open('restaurantList.txt') as f:
+    restaurants = dict((r.lower(), rest[0].lower()) for rest in json.load(f) for r in rest)
+
+app                  = Flask(__name__)
+db                   = redis.StrictRedis()
+administrative_users = frozenset(['stephanie.musal', 'ldonaghy', 'dseminara', 'tim'])
+    
 class OrderBot(object):
     def __init__(self):
         self.bot_prefix  = 'orderbot'
@@ -151,14 +158,6 @@ def post_message(message):
         return json.dumps(payload(message))
     return message
 
-app                  = Flask(__name__)
-db                   = redis.StrictRedis()
-orderbot             = OrderBot()
-administrative_users = frozenset(['stephanie.musal', 'ldonaghy', 'dseminara', 'tim'])
-
-with open('restaurantList.txt') as f:
-    restaurants = dict((r.lower(), rest[0].lower()) for rest in json.load(f) for r in rest)        
-
 @app.route('/', methods=['POST'])
 def main():
     post = [s.strip() for s in request.form['text'].lower().strip().split(':', 2)]
@@ -166,5 +165,6 @@ def main():
     return post_message(orderbot(user, post))
     
 if __name__ == '__main__':
+    orderbot = OrderBot()
     args = Schema({'--host': Use(str), '--port': Use(int), '--debug': Use(bool)}).validate(docopt(__doc__))
     app.run(host=args['--host'], port=args['--port'], debug=args['--debug'])
