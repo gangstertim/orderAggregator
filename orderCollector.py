@@ -63,7 +63,7 @@ class OrderBot(object):
         if db.exists(userhash):
             # user already placed order
             if overwrite:
-                db.hdel(db.get(userhash), user)
+                db.hdel(self.hash_restaurant(db.get(userhash)), user)
             else:
                 r = db.get(userhash)
                 self.previous_order_found[user] = (restaurant, entree)
