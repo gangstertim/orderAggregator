@@ -67,7 +67,7 @@ class OrderBot(object):
             else:
                 r = db.get(userhash)
                 self.previous_order_found[user] = (restaurant, entree)
-                return post_message("@%s you have previously placed an order to %s today.  Would you like to replace that order? Please reply yes (y) or no (n)." % (user, r))
+                return "@%s you have previously placed an order to %s today.  Would you like to replace that order? Please reply yes (y) or no (n)." % (user, r)
         d = datetime.now()
         db.hset(resthash, user, entree)
         db.set(userhash, restaurant)
