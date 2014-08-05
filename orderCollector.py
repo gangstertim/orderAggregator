@@ -33,17 +33,17 @@ class OrderBot(object):
         self.no_restaurant_found  = {}
         self.previous_order_found = {}
         self.fmap = {
-            r'add'   : self.orderadd
-            r'list'  : self.orderlist
-            r'status': self.orderstatus
-            r'help'  : self.orderhelp
-            r'?'     : self.orderhelp
+            'add'   : self.orderadd
+            'list'  : self.orderlist
+            'status': self.orderstatus
+            'help'  : self.orderhelp
+            '?'     : self.orderhelp
         }
         self.fmap2 = {
-            r'yes'   : self.orderconfirm
-            r'y'     : self.orderconfirm
-            r'no'    : self.orderdeny
-            r'n'     : self.orderdeny
+            'yes'   : self.orderconfirm
+            'y'     : self.orderconfirm
+            'no'    : self.orderdeny
+            'n'     : self.orderdeny
         }
 
     def __call__(self, user, post):
