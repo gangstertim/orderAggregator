@@ -155,7 +155,7 @@ class OrderBot(object):
 
 def payload(text): return {"channel": "#seamless-thursday",
                            "username": "OrderBot", "text": text,
-                           "icon_emoji": ":seamless:", 'link_names': 1}
+                           "icon_emoji": ":fatbot:", 'link_names': 1}
 def post_message(message):
     if message:
         return json.dumps(payload(message))
