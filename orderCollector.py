@@ -11,7 +11,7 @@ Options:
 
 '''
 
-import re, json, redis, requests
+import re, json, redis
 from docopt import docopt
 from schema import Use, Schema
 from flask import Flask, request
@@ -128,7 +128,10 @@ class OrderBot(object):
             return "@%s, you have not yet ordered today" % user
 
     def orderhelp(self, user, post):
-        return 'Order with this format: `orderBot: add: restaurant: order`. For example: `orderBot: add: Mizu: Lunch Special, Spicy Tuna Roll, Yellowtail Roll, Salmon Roll, special instructions "Label Jim, extra spicy"`.  To see if/what you have ordered, simply type `orderBot: status`'
+        helptext = 'Order with this format: `orderBot: add: restaurant: order`. For example: `orderBot: add: Mizu: Lunch Special, Spicy Tuna Roll, Yellowtail Roll, Salmon Roll, special instructions "Label Jim, extra spicy"`.  To see if/what you have ordered, simply type `orderBot: status`.'
+        if user in administrative_users:
+            helptext += '  To view all orders placed to a specific restaurant, type `orderBot: list: restaurantname` or `orderBot: list: all` to see all orders that have been placed.'
+        return helptext
 
     def orderconfirm(self, user):
         if user in self.previous_order_found:
