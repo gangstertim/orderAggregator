@@ -12,5 +12,6 @@
     ["Rana", "Ranna"],
     ["Rex Pizza", "Rex"],
     ["Carnival Pizza", "Carnival"],
-    ["Spot"]
+    ["The Spot at Rittenhouse", "The Spot", "Spot"],
+    ["Ed's", "Eds", "Ed"]
 ] 

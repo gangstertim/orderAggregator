@@ -81,7 +81,10 @@ class OrderBot(object):
             return '@%s, you cannot add an order until you confirm whether or not you would like to add your previous order of %s to the miscellaneous category.  Please reply yes (y) or no (n).' % (user, ': '.join(self.no_restaurant_found[user]))
         elif user in self.previous_order_found:
             return '@%s, you cannot add an order until you confirm whether or not you would like to replace your previous with %s.  Please reply yes (y) or no (n).' % (user, ': '.join(self.previous_order_found[user]))
-        [rest, entree] = [s.strip() for s in post[2].split(':', 1)]
+        try:
+            [rest, entree] = [s.strip() for s in post[2].split(':', 1)]
+        except ValueError:
+            return ""
         if not rest in restaurants:
             self.no_restaurant_found[user] = (rest, entree)
             return '@%s, %s is not one of our usual restaurants.  Should we save your order in the "Miscellaneous Restaurant" list? Yes/No' % (user, rest)
