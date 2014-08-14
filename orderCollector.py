@@ -84,7 +84,7 @@ class OrderBot(object):
         try:
             [rest, entree] = [s.strip() for s in post[2].split(':', 1)]
         except ValueError:
-            return ""
+            return "@s, please separate the restaurant name and your order with a colon." % (user)
         if not rest in restaurants:
             self.no_restaurant_found[user] = (rest, entree)
             return '@%s, %s is not one of our usual restaurants.  Should we save your order in the "Miscellaneous Restaurant" list? Yes/No' % (user, rest)
