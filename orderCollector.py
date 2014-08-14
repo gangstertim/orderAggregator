@@ -21,15 +21,15 @@ from datetime import datetime, timedelta
 with open('restaurantList.txt') as f:
     restaurants = dict((r.lower(), rest[0].lower()) for rest in json.load(f) for r in rest)
 
-app                  = Flask(__name__)
-db                   = redis.StrictRedis()
-administrative_users = frozenset(['stephanie.musal', 'ldonaghy', 'dseminara', 'tim'])
+app = Flask(__name__)
+db  = redis.StrictRedis()
     
 class OrderBot(object):
     def __init__(self):
-        self.bot_prefix  = 'orderbot'
-        self.rest_prefix = '%s:orders:' % self.bot_prefix
-        self.user_prefix = '%s:users:' % self.bot_prefix
+        self.bot_prefix           = 'orderbot'
+        self.rest_prefix          = '%s:orders:' % self.bot_prefix
+        self.user_prefix          = '%s:users:' % self.bot_prefix
+        self.administrative_users = db.smembers('%s:admins' % self.bot_prefix)
         self.no_restaurant_found  = {}
         self.previous_order_found = {}
         self.fmap = {
@@ -47,7 +47,7 @@ class OrderBot(object):
         }
 
     def __call__(self, user, post):
-        if len(post) > 1 and self.bot_prefix == post[0] and post[1] in self.fmap:
+        if len(post) > 1 and re.match(r'@?%s' % self.bot_prefix, post[0]) and post[1] in self.fmap:
             return self.fmap[post[1]](user, post)
         elif len(post) == 1 and post[0] in self.fmap2:
             return self.fmap2[post[0]](user)
@@ -91,7 +91,7 @@ class OrderBot(object):
         return self.add_order(user, restaurants[rest], entree)
 
     def orderlist(self, user, post):
-        if user in administrative_users:
+        if user in self.administrative_users:
             rest = post[2]
             table = PrettyTable(["Name", "Restaurant", "Order"])
             table.align["Name"] = 'l'
@@ -132,7 +132,7 @@ class OrderBot(object):
 
     def orderhelp(self, user, post):
         helptext = 'Order with this format: `orderBot: add: restaurant: order`. For example: `orderBot: add: Mizu: Lunch Special, Spicy Tuna Roll, Yellowtail Roll, Salmon Roll, special instructions "Label Jim, extra spicy"`.  To see if/what you have ordered, simply type `orderBot: status`.'
-        if user in administrative_users:
+        if user in self.administrative_users:
             helptext += '  To view all orders placed to a specific restaurant, type `orderBot: list: restaurantname` or `orderBot: list: all` to see all orders that have been placed.'
         return helptext
 
