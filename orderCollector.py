@@ -25,7 +25,7 @@ app = Flask(__name__)
     
 class OrderBot(object):
     def __init__(self):
-        self.db  = redis.StrictRedis()
+        self.db          = redis.StrictRedis()
         self.bot_prefix  = 'orderbot'
         self.rest_prefix = '{}:orders:'.format(self.bot_prefix)
         self.user_prefix = '{}:users:'.format(self.bot_prefix)
@@ -34,24 +34,25 @@ class OrderBot(object):
         self.no_restaurant_found  = {}
         self.previous_order_found = {}
         self.fmap = { # Commands that take the form orderbot: <command>[: <extra text>]
-            'add'   : self.orderadd,
-            'copy'  : self.ordercopy,
-            'delete': self.orderdelete,
-            'list'  : self.orderlist,
-            'status': self.orderstatus,
-            'help'  : self.orderhelp,
-            '?'     : self.orderhelp
+            'add'     : self.orderadd,
+            'copy'    : self.ordercopy,
+            'delete'  : self.orderdelete,
+            'favorite': self.orderfavorite,
+            'list'    : self.orderlist,
+            'status'  : self.orderstatus,
+            'help'    : self.orderhelp,
+            '?'       : self.orderhelp
         }
         self.fmap2 = { # One word commands
-            'yes'   : self.orderconfirm,
-            'y'     : self.orderconfirm,
-            'no'    : self.orderdeny,
-            'n'     : self.orderdeny
+            'yes'     : self.orderconfirm,
+            'y'       : self.orderconfirm,
+            'no'      : self.orderdeny,
+            'n'       : self.orderdeny
         }
 
     def __call__(self, user, post):
         if len(post) > 1 and re.match(r'@?{}'.format(self.bot_prefix), post[0]) and post[1] in self.fmap:
-            return self.fmap[post[1]](user, post[2])
+            return self.fmap[post[1]](user, post[2] if len(post) > 2 else "")
         elif len(post) == 1 and post[0] in self.fmap2:
             return self.fmap2[post[0]](user)
         return ""
@@ -93,10 +94,17 @@ class OrderBot(object):
             return '@{}, {} is not one of our usual restaurants.  Should we save your order in the "Miscellaneous Restaurant" list? Yes/No'.format(user, rest)
         return self.add_order(user, restaurants[rest], entree)
 
+    def ordercopy(self, user, copyee):
+        rest  = self.db.hget(self.hash_user(copyee), 'current')
+        order = self.db.hget(self.hash_restaurant(rest), copyee)
+        if order:
+            return self.add_order(user, rest, order)
+        return '@{}, {} has not placed an order today.'.format(user, copyee)
+        
     def orderdelete(self, user, _):
         userhash  = self.hash_user(user)
         prevorder = self.db.hget(userhash, 'current')
-        if prevorder:
+        if self.db.hexists(self.hash_restaurant(prevorder), user):
             self.db.hdel(self.hash_restaurant(prevorder), user)
             self.db.hdel(userhash, 'current')
             if user in self.previous_order_found:
@@ -104,13 +112,9 @@ class OrderBot(object):
             return '@{}, your previous order to {} has been deleted successfully'.format(user, prevorder)
         return '@{}, you have no previous order to delete.'.format(user)
 
-    def ordercopy(self, user, copyee):
-        rest   = self.db.hget(self.hash_user(copyee), 'current')
-        order  = self.db.hget(self.hash_restaurant(rest), copyee)
-        if order:
-            return self.add_order(user, rest, order)
-        return '@{}, {} has not placed an order today.'.format(user, copyee)
-            
+    def orderfavorite(self, user, post):
+        return ""
+    
     def orderlist(self, user, rest):
         if user in self.administrative_users:
             table = PrettyTable(["Name", "Restaurant", "Order"])
@@ -119,7 +123,7 @@ class OrderBot(object):
             table.align["Order"] = 'l'
 
             if rest == 'all':
-                keys = self.db.keys(self.rest_prefix + '*')
+                keys  = self.db.keys(self.rest_prefix + '*')
                 title = 'All Orders'
                 for resthash in keys:
                     rest = resthash.replace(self.rest_prefix, "", 1)
@@ -129,9 +133,9 @@ class OrderBot(object):
                 return "*{}*\n```{}```".format(title, str(table))
             else:
                 if rest in restaurants:
-                    rest = restaurants[rest]
-                    title = rest
-                    resthash = self.hash_restaurant(rest)
+                    rest       = restaurants[rest]
+                    title      = rest
+                    resthash   = self.hash_restaurant(rest)
                     order_hash = self.db.hgetall(resthash)
                     for name, order in order_hash.iteritems():
                         table.add_row((name, rest, order))
@@ -142,7 +146,7 @@ class OrderBot(object):
 
     def orderstatus(self, user, _):
         if self.db.exists(self.hash_user(user)):
-            curr_rest = self.db.hget(self.hash_user(user), 'current')
+            curr_rest  = self.db.hget(self.hash_user(user), 'current')
             curr_order = self.db.hget(self.hash_restaurant(curr_rest), user)
             if curr_rest == "miscellaneous":
                 [curr_rest, curr_order] = [x.strip() for x in curr_order.split(':', 1)]
@@ -192,5 +196,5 @@ def main():
     
 if __name__ == '__main__':
     orderbot = OrderBot()
-    args = Schema({'--host': Use(str), '--port': Use(int), '--debug': Use(bool)}).validate(docopt(__doc__))
+    args     = Schema({'--host': Use(str), '--port': Use(int), '--debug': Use(bool)}).validate(docopt(__doc__))
     app.run(host=args['--host'], port=args['--port'], debug=args['--debug'])
