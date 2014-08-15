@@ -89,7 +89,7 @@ class OrderBot(object):
         elif user in self.previous_order_found:
             return '@{}, you cannot add an order until you confirm whether or not you would like to replace your previous with {}.  Please reply yes (y) or no (n).'.format(user, ': '.join(self.previous_order_found[user]))
         try:
-            [rest, entree] = [s.strip() for s in post[2].split(':', 1)]
+            [rest, entree] = [s.strip() for s in post.split(':', 1)]
         except ValueError:
             return "@{}, please separate the restaurant name and your order with a colon.".format(user)
         if not rest in restaurants:
@@ -116,6 +116,10 @@ class OrderBot(object):
         return '@{}, you have no previous order to delete.'.format(user)
 
     def orderfavorite(self, user, post):
+        try:
+            [command, fav] = [s.strip() for s in post.split(':', 1)]
+        except ValueError:
+            pass
         return ""
     
     def orderlist(self, user, rest):
