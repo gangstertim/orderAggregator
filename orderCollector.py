@@ -96,6 +96,8 @@ class OrderBot(object):
         return self.add_order(user, restaurants[rest], entree)
 
     def ordercopy(self, user, copyee):
+        if user == copyee:
+            return '@{}, you cannot copy yourself.'.format(user)
         rest   = self.db.hget(self.hash_user(copyee), 'current')
         order  = self.db.hget(self.hash_restaurant(rest), copyee)
         if order:
