@@ -26,9 +26,9 @@ app = Flask(__name__)
 class OrderBot(object):
     def __init__(self):
         self.db  = redis.StrictRedis()
-        self.bot_prefix           = 'orderbot'
-        self.rest_prefix          = '{}:orders:'.format(self.bot_prefix)
-        self.user_prefix          = '{}:users:'.format(self.bot_prefix)
+        self.bot_prefix  = 'orderbot'
+        self.rest_prefix = '{}:orders:'.format(self.bot_prefix)
+        self.user_prefix = '{}:users:'.format(self.bot_prefix)
         # Add users to this set in redis to make them admins
         self.administrative_users = self.db.smembers('{}:admins'.format(self.bot_prefix)) 
         self.no_restaurant_found  = {}
@@ -62,20 +62,16 @@ class OrderBot(object):
     def add_order(self, user, restaurant, entree, overwrite=False):
         resthash = self.hash_restaurant(restaurant)
         userhash = self.hash_user(user)
-        if self.db.exists(userhash):
+        prev = self.db.hget(userhash, 'current')
+        if prev and self.db.hget(prev, user) and not overwrite:
             # user already placed order
-            if overwrite:
-                self.db.hdel(self.hash_restaurant(self.db.get(userhash)), user)
-            else:
-                r = self.db.get(userhash)
-                self.previous_order_found[user] = (restaurant, entree)
-                return "@{} you have previously placed an order to {} today.  Would you like to replace that order? Please reply yes (y) or no (n).".format(user, r)
+            self.previous_order_found[user] = (restaurant, entree)
+            return "@{} you have previously placed an order to {} today.  Would you like to replace that order? Please reply yes (y) or no (n).".format(user, prev)
         d = datetime.now()
         self.db.hset(resthash, user, entree)
-        self.db.set(userhash, restaurant)
+        self.db.hset(userhash, 'current', restaurant)
         exptime = datetime(d.year, d.month, d.day) + timedelta(1)
         self.db.expireat(resthash, exptime)
-        self.db.expireat(userhash, exptime)
         return "@{}, your order to {} was added successfully".format(user, restaurant)
     
     def orderadd(self, user, post):
@@ -94,10 +90,10 @@ class OrderBot(object):
 
     def orderdelete(self, user, post):
         userhash  = self.hash_user(user)
-        prevorder = self.db.get(userhash)
+        prevorder = self.db.hget(userhash, 'current')
         if prevorder:
             self.db.hdel(self.hash_restaurant(prevorder), user)
-            self.db.delete(userhash)
+            self.db.hdel(userhash, 'current')
             if user in self.previous_order_found:
                 del self.previous_order_found[user]
             return '@{}, your previous order to {} has been deleted successfully'.format(user, prevorder)
@@ -136,7 +132,7 @@ class OrderBot(object):
 
     def orderstatus(self, user, post):
         if self.db.exists(self.hash_user(user)):
-            curr_rest = self.db.get(self.hash_user(user))
+            curr_rest = self.db.hget(self.hash_user(user), 'current')
             curr_order = self.db.hget(self.hash_restaurant(curr_rest), user)
             if curr_rest == "miscellaneous":
                 [curr_rest, curr_order] = [x.strip() for x in curr_order.split(':', 1)]
@@ -145,7 +141,7 @@ class OrderBot(object):
             return "@{}, you have not yet ordered today".format(user)
 
     def orderhelp(self, user, post):
-        helptext = 'Order with this format: `orderBot: add: restaurant: order`. For example: `orderBot: add: Mizu: Lunch Special, Spicy Tuna Roll, Yellowtail Roll, Salmon Roll, special instructions "Label Jim, extra spicy"`.  To see if/what you have ordered, simply type `orderBot: status`.'
+        helptext = 'Order with this format: `orderBot: add: restaurant: order`. For example: `orderBot: add: Mizu: Lunch Special, Spicy Tuna Roll, Yellowtail Roll, Salmon Roll, special instructions "Label Jim, extra spicy"`.  To delete your current order, type `orderBot: delete`.  To see if/what you have ordered, simply type `orderBot: status`.'
         if user in self.administrative_users:
             helptext += '  To view all orders placed to a specific restaurant, type `orderBot: list: restaurantname` or `orderBot: list: all` to see all orders that have been placed.'
         return helptext
