@@ -11,7 +11,7 @@ Options:
 
 '''
 
-import re, json, redis
+import re, json, redis, random
 from docopt import docopt
 from schema import Use, Schema
 from flask import Flask, request
@@ -37,7 +37,6 @@ class OrderBot(object):
             'add'     : self.orderadd,
             'copy'    : self.ordercopy,
             'delete'  : self.orderdelete,
-            'favorite': self.orderfavorite,
             'list'    : self.orderlist,
             'status'  : self.orderstatus,
             'help'    : self.orderhelp,
@@ -114,13 +113,6 @@ class OrderBot(object):
             return '@{}, your previous order to {} has been deleted successfully'.format(user, prevorder)
         return '@{}, you have no previous order to delete.'.format(user)
 
-    def orderfavorite(self, user, post):
-        try:
-            [command, fav] = [s.strip() for s in post.split(':', 1)]
-        except ValueError:
-            pass
-        return ""
-            
     def orderlist(self, user, rest):
         if user in self.administrative_users:
             table = PrettyTable(["Name", "Restaurant", "Order"])
