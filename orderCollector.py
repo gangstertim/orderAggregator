@@ -52,7 +52,7 @@ class OrderBot(object):
 
     def __call__(self, user, post):
         if len(post) > 1 and re.match(r'@?{}'.format(self.bot_prefix), post[0]) and post[1] in self.fmap:
-            return self.fmap[post[1]](user, post)
+            return self.fmap[post[1]](user, post[2] if len(post) > 2 else "")
         elif len(post) == 1 and post[0] in self.fmap2:
             return self.fmap2[post[0]](user)
         return ""
@@ -88,7 +88,7 @@ class OrderBot(object):
         elif user in self.previous_order_found:
             return '@{}, you cannot add an order until you confirm whether or not you would like to replace your previous with {}.  Please reply yes (y) or no (n).'.format(user, ': '.join(self.previous_order_found[user]))
         try:
-            [rest, entree] = [s.strip() for s in post[2].split(':', 1)]
+            [rest, entree] = [s.strip() for s in post.split(':', 1)]
         except ValueError:
             return "@{}, please separate the restaurant name and your order with a colon.".format(user)
         if not rest in restaurants:
@@ -96,8 +96,7 @@ class OrderBot(object):
             return '@{}, {} is not one of our usual restaurants.  Should we save your order in the "Miscellaneous Restaurant" list? Yes/No'.format(user, rest)
         return self.add_order(user, restaurants[rest], entree)
 
-    def ordercopy(self, user, post):
-        copyee = post[2]
+    def ordercopy(self, user, copyee):
         rest   = self.db.hget(self.hash_user(copyee), 'current')
         order  = self.db.hget(self.hash_restaurant(rest), copyee)
         if order:
@@ -117,18 +116,17 @@ class OrderBot(object):
 
     def orderfavorite(self, user, post):
         try:
-            [command, fav] = [s.strip() for s in post[2].split(':', 1)]
+            [command, fav] = [s.strip() for s in post.split(':', 1)]
         except ValueError:
             pass
         return ""
             
-    def orderlist(self, user, post):
+    def orderlist(self, user, rest):
         if user in self.administrative_users:
             table = PrettyTable(["Name", "Restaurant", "Order"])
             table.align["Name"] = 'l'
             table.align["Restaurant"] = 'l'
             table.align["Order"] = 'l'
-            rest = post[2]
             if rest == 'all':
                 keys  = self.db.keys(self.rest_prefix + '*')
                 title = 'All Orders'
