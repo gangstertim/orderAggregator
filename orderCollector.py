@@ -93,11 +93,11 @@ class OrderBot(object):
         return self.add_order(user, restaurants[rest], entree)
 
     def orderdelete(self, user, post):
-        userhash = self.hash_user(user)
-        prevorder = db.get(userhash)
+        userhash  = self.hash_user(user)
+        prevorder = self.db.get(userhash)
         if prevorder:
-            db.hdel(hash_restaurant(prevorder), user)
-            db.delete(userhash)
+            self.db.hdel(hash_restaurant(prevorder), user)
+            self.db.delete(userhash)
             if user in self.previous_order_found:
                 del self.previous_order_found[user]
             return '@{}, your previous order to {} has been deleted successfully'.format(user, prevorder)
