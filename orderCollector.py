@@ -57,16 +57,18 @@ class OrderBot(object):
             return self.fmap2[post[0]](user)
         return ""
 
-    def hash_restaurant(self, r): return self.rest_prefix + r
+    def hash_restaurant(self, r):
+        if r: return self.rest_prefix + r
 
-    def hash_user(self, u): return self.user_prefix + u
+    def hash_user(self, u):
+        if u: return self.user_prefix + u
 
     def add_order(self, user, restaurant, entree, overwrite=False):
         resthash = self.hash_restaurant(restaurant)
         userhash = self.hash_user(user)
         prev     = self.db.hget(userhash, 'current')
         prevhash = self.hash_restaurant(prev)
-        if prev and self.db.hget(prevhash, user):
+        if prev and self.db.hexists(prevhash, user):
             # user already placed order
             if overwrite:
                 self.db.hdel(prevhash, user)
