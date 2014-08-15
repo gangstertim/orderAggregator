@@ -154,7 +154,7 @@ class OrderBot(object):
             return "@{}, you have not yet ordered today".format(user)
 
     def orderhelp(self, user, _):
-        helptext = 'Order with this format: `orderBot: add: restaurant: order`. For example: `orderBot: add: Mizu: Lunch Special, Spicy Tuna Roll, Yellowtail Roll, Salmon Roll, special instructions "Label Jim, extra spicy"`.  To delete your current order, type `orderBot: delete`.  To see if/what you have ordered, simply type `orderBot: status`.'
+        helptext = 'Order with this format: `orderBot: add: restaurant: order`. For example: `orderBot: add: Mizu: Lunch Special, Spicy Tuna Roll, Yellowtail Roll, Salmon Roll, special instructions "Label Jim, extra spicy"`.  To delete your current order, type `orderBot: delete`.  To copy someone\'s order, type `orderBot: copy: username`.  To see if/what you have ordered, simply type `orderBot: status`.'
         if user in self.administrative_users:
             helptext += '  To view all orders placed to a specific restaurant, type `orderBot: list: restaurantname` or `orderBot: list: all` to see all orders that have been placed.'
         return helptext
