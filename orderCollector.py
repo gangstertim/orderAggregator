@@ -63,7 +63,7 @@ class OrderBot(object):
         resthash = self.hash_restaurant(restaurant)
         userhash = self.hash_user(user)
         prev = self.db.hget(userhash, 'current')
-        if prev and self.db.hget(hash_restaurant(prev), user) and not overwrite:
+        if prev and self.db.hget(self.hash_restaurant(prev), user) and not overwrite:
             # user already placed order
             self.previous_order_found[user] = (restaurant, entree)
             return "@{} you have previously placed an order to {} today.  Would you like to replace that order? Please reply yes (y) or no (n).".format(user, prev)
