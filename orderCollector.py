@@ -101,11 +101,12 @@ class OrderBot(object):
         return '@{}, you have no previous order to delete.'.format(user)
 
     def ordercopy(self, user, post):
-        rest  = self.db.hget(self.hash_user(post), 'current')
-        order = self.db.hget(self.hash_restaurant(rest), post)
+        copyee = post[2]
+        rest   = self.db.hget(self.hash_user(copyee), 'current')
+        order  = self.db.hget(self.hash_restaurant(rest), copyee)
         if order:
             return self.add_order(user, rest, order)
-        return '@{}, {} has not placed an order today.'.format(user, post)
+        return '@{}, {} has not placed an order today.'.format(user, copyee)
             
     def orderlist(self, user, post):
         if user in self.administrative_users:
