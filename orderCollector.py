@@ -63,11 +63,15 @@ class OrderBot(object):
     def add_order(self, user, restaurant, entree, overwrite=False):
         resthash = self.hash_restaurant(restaurant)
         userhash = self.hash_user(user)
-        prev = self.db.hget(userhash, 'current')
-        if prev and self.db.hget(self.hash_restaurant(prev), user) and not overwrite:
+        prev     = self.db.hget(userhash, 'current')
+        prevhash = self.hash_restaurant(prev)
+        if prev and self.db.hget(prevhash, user):
             # user already placed order
-            self.previous_order_found[user] = (restaurant, entree)
-            return "@{} you have previously placed an order to {} today.  Would you like to replace that order? Please reply yes (y) or no (n).".format(user, prev)
+            if overwrite:
+                self.db.hdel(prevhash, user)
+            else:
+                self.previous_order_found[user] = (restaurant, entree)
+                return "@{} you have previously placed an order to {} today.  Would you like to replace that order? Please reply yes (y) or no (n).".format(user, prev)
         d = datetime.now()
         self.db.hset(resthash, user, entree)
         self.db.hset(userhash, 'current', restaurant)
