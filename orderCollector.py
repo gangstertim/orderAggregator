@@ -52,7 +52,10 @@ class OrderBot(object):
 
     def __call__(self, user, post):
         if len(post) > 1 and re.match(r'@?{}'.format(self.bot_prefix), post[0]) and post[1] in self.fmap:
-            return self.fmap[post[1]](user, post[2] if len(post) > 2 else "")
+            try: # temporary fix, check for arg length on commands that need it
+                return self.fmap[post[1]](user, post[2] if len(post) > 2 else "")
+            except IndexError:
+                return ""
         elif len(post) == 1 and post[0] in self.fmap2:
             return self.fmap2[post[0]](user)
         return ""
