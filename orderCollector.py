@@ -35,6 +35,7 @@ class OrderBot(object):
         self.previous_order_found = {}
         self.fmap = { # Commands that take the form orderbot: <command>[: <extra text>]
             'add'   : self.orderadd,
+            'copy'  : self.ordercopy,
             'delete': self.orderdelete,
             'list'  : self.orderlist,
             'status': self.orderstatus,
@@ -73,7 +74,7 @@ class OrderBot(object):
         exptime = datetime(d.year, d.month, d.day) + timedelta(1)
         self.db.expireat(resthash, exptime)
         return "@{}, your order to {} was added successfully".format(user, restaurant)
-    
+
     def orderadd(self, user, post):
         if user in self.no_restaurant_found:
             return '@{}, you cannot add an order until you confirm whether or not you would like to add your previous order of {} to the miscellaneous category.  Please reply yes (y) or no (n).'.format(user, ': '.join(self.no_restaurant_found[user]))
@@ -98,8 +99,14 @@ class OrderBot(object):
                 del self.previous_order_found[user]
             return '@{}, your previous order to {} has been deleted successfully'.format(user, prevorder)
         return '@{}, you have no previous order to delete.'.format(user)
-            
 
+    def ordercopy(self, user, post):
+        rest  = self.db.hget(self.hash_user(post), 'current')
+        order = self.db.hget(self.hash_restaurant(rest), post)
+        if order:
+            return self.add_order(user, rest, order)
+        return '@{}, {} has not placed an order today.'.format(user, post)
+            
     def orderlist(self, user, post):
         if user in self.administrative_users:
             rest = post[2]
