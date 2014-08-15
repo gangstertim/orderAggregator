@@ -96,7 +96,7 @@ class OrderBot(object):
         userhash  = self.hash_user(user)
         prevorder = self.db.get(userhash)
         if prevorder:
-            self.db.hdel(hash_restaurant(prevorder), user)
+            self.db.hdel(self.hash_restaurant(prevorder), user)
             self.db.delete(userhash)
             if user in self.previous_order_found:
                 del self.previous_order_found[user]
