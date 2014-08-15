@@ -51,7 +51,7 @@ class OrderBot(object):
 
     def __call__(self, user, post):
         if len(post) > 1 and re.match(r'@?{}'.format(self.bot_prefix), post[0]) and post[1] in self.fmap:
-            return self.fmap[post[1]](user, post)
+            return self.fmap[post[1]](user, post[2])
         elif len(post) == 1 and post[0] in self.fmap2:
             return self.fmap2[post[0]](user)
         return ""
@@ -89,7 +89,7 @@ class OrderBot(object):
             return '@{}, {} is not one of our usual restaurants.  Should we save your order in the "Miscellaneous Restaurant" list? Yes/No'.format(user, rest)
         return self.add_order(user, restaurants[rest], entree)
 
-    def orderdelete(self, user, post):
+    def orderdelete(self, user, _):
         userhash  = self.hash_user(user)
         prevorder = self.db.hget(userhash, 'current')
         if prevorder:
@@ -100,17 +100,15 @@ class OrderBot(object):
             return '@{}, your previous order to {} has been deleted successfully'.format(user, prevorder)
         return '@{}, you have no previous order to delete.'.format(user)
 
-    def ordercopy(self, user, post):
-        copyee = post[2]
+    def ordercopy(self, user, copyee):
         rest   = self.db.hget(self.hash_user(copyee), 'current')
         order  = self.db.hget(self.hash_restaurant(rest), copyee)
         if order:
             return self.add_order(user, rest, order)
         return '@{}, {} has not placed an order today.'.format(user, copyee)
             
-    def orderlist(self, user, post):
+    def orderlist(self, user, rest):
         if user in self.administrative_users:
-            rest = post[2]
             table = PrettyTable(["Name", "Restaurant", "Order"])
             table.align["Name"] = 'l'
             table.align["Restaurant"] = 'l'
@@ -138,7 +136,7 @@ class OrderBot(object):
             return "Nobody has ordered from a restaurant called {}".format(rest)
         return ""
 
-    def orderstatus(self, user, post):
+    def orderstatus(self, user, _):
         if self.db.exists(self.hash_user(user)):
             curr_rest = self.db.hget(self.hash_user(user), 'current')
             curr_order = self.db.hget(self.hash_restaurant(curr_rest), user)
@@ -148,7 +146,7 @@ class OrderBot(object):
         else:
             return "@{}, you have not yet ordered today".format(user)
 
-    def orderhelp(self, user, post):
+    def orderhelp(self, user, _):
         helptext = 'Order with this format: `orderBot: add: restaurant: order`. For example: `orderBot: add: Mizu: Lunch Special, Spicy Tuna Roll, Yellowtail Roll, Salmon Roll, special instructions "Label Jim, extra spicy"`.  To delete your current order, type `orderBot: delete`.  To see if/what you have ordered, simply type `orderBot: status`.'
         if user in self.administrative_users:
             helptext += '  To view all orders placed to a specific restaurant, type `orderBot: list: restaurantname` or `orderBot: list: all` to see all orders that have been placed.'
